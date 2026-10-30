@@ -8,6 +8,7 @@ import {
   ChevronRight,
   CircleDollarSign,
   Download,
+  BookOpen,
   LayoutDashboard,
   Package,
   Plus,
@@ -36,6 +37,8 @@ import { ProductForm } from "./catalog/ProductForm";
 import { SettingsForm } from "./SettingsForm";
 import { Simulator } from "./simulator/Simulator";
 import { Balance } from "./balance/Balance";
+import { useOnboarding, type OnboardingStep } from "../hooks/useOnboarding";
+import { Onboarding } from "./onboarding/Onboarding";
 const tabs = [
   { name: "Visão geral", icon: LayoutDashboard },
   { name: "Catálogo de produtos", icon: Package },
@@ -51,6 +54,20 @@ export function App() {
   const [editing, setEditing] = useState<CatalogProduct>();
   const [resetOpen, setResetOpen] = useState(false);
   const [deleting, setDeleting] = useState<CatalogProduct>();
+  const onboarding = useOnboarding();
+  const locateStep = (step: OnboardingStep) => {
+    setModal(false);
+    setTab(({ welcome: 0, costs: 4, product: 1, price: 1, simulation: 2, result: 3 })[step]);
+    if (step === "result") setMonth(currentMonth());
+  };
+  const goToStep = (step: OnboardingStep) => {
+    onboarding.go(step);
+    locateStep(step);
+  };
+  const startTutorial = () => {
+    onboarding.start();
+    locateStep(onboarding.completed ? "welcome" : onboarding.step);
+  };
   useEffect(() => {
     void useAppStore.persist.rehydrate();
   }, []);
@@ -141,6 +158,17 @@ export function App() {
               />
             </label>
           </div>
+          {onboarding.ready && onboarding.active && (
+            <Onboarding
+              step={onboarding.step}
+              onGo={goToStep}
+              onPause={onboarding.pause}
+              onFinish={onboarding.finish}
+              onLocate={() => locateStep(onboarding.step)}
+              hasProducts={state.products.length > 0}
+              storageAvailable={onboarding.storageAvailable}
+            />
+          )}
           {state.notice && (
             <div className="callout" role="status">
               {state.notice}
@@ -148,6 +176,10 @@ export function App() {
           )}
           {tab === 0 && (
             <>
+              <div className="tutorial-entry">
+                <div><strong>Conheça o Precifica passo a passo</strong><p className="muted">Dos custos à sua primeira projeção financeira.</p></div>
+                <Button variant="outline" onClick={startTutorial}><BookOpen size={17} />{onboarding.completed ? "Rever tutorial" : onboarding.step === "welcome" ? "Tutorial" : "Retomar tutorial"}</Button>
+              </div>
               <div className="metrics">
                 {[
                   {
@@ -313,9 +345,13 @@ export function App() {
               />
             </section>
           )}
-          {tab === 2 && <Simulator />}
+          {tab === 2 && <Simulator onSaved={(included) => {
+            if (onboarding.active && onboarding.step === "simulation" && included) goToStep("result");
+          }} />}
           {tab === 3 && <Balance month={month} />}
-          {tab === 4 && <SettingsForm key={state.settings.updatedAt} />}
+          {tab === 4 && <SettingsForm key={state.settings.updatedAt} onSaved={() => {
+            if (onboarding.active && onboarding.step === "costs") goToStep("product");
+          }} />}
         </main>
       </div>
       <Modal
@@ -324,11 +360,17 @@ export function App() {
         onOpenChange={setModal}
       >
         {modal && (
+          <>
+          {onboarding.active && onboarding.step === "product" && <div className="callout" role="note">Tutorial: informe o nome e o preço de venda. Adicione o custo de cada insumo por unidade, os impostos e a margem desejada. Ao salvar, vamos analisar a contribuição do produto.</div>}
           <ProductForm
             key={editing?.id ?? "new"}
             product={editing}
-            onDone={() => setModal(false)}
+            onDone={() => {
+              setModal(false);
+              if (onboarding.active && onboarding.step === "product") goToStep("price");
+            }}
           />
+          </>
         )}
       </Modal>
       <Modal
