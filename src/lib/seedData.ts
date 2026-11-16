@@ -1,7 +1,11 @@
 import type { AppPersistedStorage } from '../types';
 export function createSeedData(): AppPersistedStorage {
   const now = new Date().toISOString();
-  return { version: 1, settings: { id: 'default_settings', fixedCosts: [
+  return { version: 1, productTaxes: [
+    { id: 'tax-shopee', name: 'Shopee', ratePct: 0.04 },
+    { id: 'tax-tiktok', name: 'TikTok Shopping', ratePct: 0.05 },
+    { id: 'tax-personal', name: 'Venda pessoal', ratePct: 0.01 },
+  ], settings: { id: 'default_settings', fixedCosts: [
     { id: 'fix-1', name: 'Aluguel da Oficina', amount: 1500 }, { id: 'fix-2', name: 'Energia Elétrica', amount: 350 },
     { id: 'fix-3', name: 'Internet / Software', amount: 180 }, { id: 'fix-4', name: 'Contabilidade', amount: 320 },
   ], proLaboreTarget: 3500, emergencyReservePct: 0.1, updatedAt: now }, products: [

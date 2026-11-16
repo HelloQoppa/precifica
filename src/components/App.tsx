@@ -34,6 +34,7 @@ import type { CatalogProduct } from "../types";
 import { Button } from "./ui/button";
 import { Modal } from "./ui/dialog";
 import { ProductForm } from "./catalog/ProductForm";
+import { ProductTaxes } from "./catalog/ProductTaxes";
 import { SettingsForm } from "./SettingsForm";
 import { Simulator } from "./simulator/Simulator";
 import { Balance } from "./balance/Balance";
@@ -45,6 +46,7 @@ const tabs = [
   { name: "Simulador de pedidos", icon: Calculator },
   { name: "Balancete projetado", icon: BarChart3 },
   { name: "Custos e metas", icon: Settings2 },
+  { name: "Impostos de produtos", icon: CircleDollarSign },
 ];
 export function App() {
   const state = useAppStore();
@@ -57,7 +59,11 @@ export function App() {
   const onboarding = useOnboarding();
   const locateStep = (step: OnboardingStep) => {
     setModal(false);
-    setTab(({ welcome: 0, costs: 4, product: 1, price: 1, simulation: 2, result: 3 })[step]);
+    setTab(
+      { welcome: 0, costs: 4, product: 1, price: 1, simulation: 2, result: 3 }[
+        step
+      ],
+    );
     if (step === "result") setMonth(currentMonth());
   };
   const goToStep = (step: OnboardingStep) => {
@@ -177,8 +183,20 @@ export function App() {
           {tab === 0 && (
             <>
               <div className="tutorial-entry">
-                <div><strong>Conheça o Precifica passo a passo</strong><p className="muted">Dos custos à sua primeira projeção financeira.</p></div>
-                <Button variant="outline" onClick={startTutorial}><BookOpen size={17} />{onboarding.completed ? "Rever tutorial" : onboarding.step === "welcome" ? "Tutorial" : "Retomar tutorial"}</Button>
+                <div>
+                  <strong>Conheça o Precifica passo a passo</strong>
+                  <p className="muted">
+                    Dos custos à sua primeira projeção financeira.
+                  </p>
+                </div>
+                <Button variant="outline" onClick={startTutorial}>
+                  <BookOpen size={17} />
+                  {onboarding.completed
+                    ? "Rever tutorial"
+                    : onboarding.step === "welcome"
+                      ? "Tutorial"
+                      : "Retomar tutorial"}
+                </Button>
               </div>
               <div className="metrics">
                 {[
@@ -326,7 +344,9 @@ export function App() {
                   <Button
                     variant="outline"
                     disabled={state.products.length === 0}
-                    onClick={() => exportCatalog(state.products, state.settings)}
+                    onClick={() =>
+                      exportCatalog(state.products, state.settings)
+                    }
                   >
                     <Download size={16} /> Exportar CSV
                   </Button>
@@ -345,13 +365,29 @@ export function App() {
               />
             </section>
           )}
-          {tab === 2 && <Simulator onSaved={(included) => {
-            if (onboarding.active && onboarding.step === "simulation" && included) goToStep("result");
-          }} />}
+          {tab === 2 && (
+            <Simulator
+              onSaved={(included) => {
+                if (
+                  onboarding.active &&
+                  onboarding.step === "simulation" &&
+                  included
+                )
+                  goToStep("result");
+              }}
+            />
+          )}
           {tab === 3 && <Balance month={month} />}
-          {tab === 4 && <SettingsForm key={state.settings.updatedAt} onSaved={() => {
-            if (onboarding.active && onboarding.step === "costs") goToStep("product");
-          }} />}
+          {tab === 5 && <ProductTaxes />}
+          {tab === 4 && (
+            <SettingsForm
+              key={state.settings.updatedAt}
+              onSaved={() => {
+                if (onboarding.active && onboarding.step === "costs")
+                  goToStep("product");
+              }}
+            />
+          )}
         </main>
       </div>
       <Modal
@@ -361,15 +397,22 @@ export function App() {
       >
         {modal && (
           <>
-          {onboarding.active && onboarding.step === "product" && <div className="callout" role="note">Tutorial: informe o nome e o preço de venda. Adicione o custo de cada insumo por unidade, os impostos e a margem desejada. Ao salvar, vamos analisar a contribuição do produto.</div>}
-          <ProductForm
-            key={editing?.id ?? "new"}
-            product={editing}
-            onDone={() => {
-              setModal(false);
-              if (onboarding.active && onboarding.step === "product") goToStep("price");
-            }}
-          />
+            {onboarding.active && onboarding.step === "product" && (
+              <div className="callout" role="note">
+                Tutorial: informe o nome e o preço de venda. Adicione o custo de
+                cada insumo por unidade, os impostos e a margem desejada. Ao
+                salvar, vamos analisar a contribuição do produto.
+              </div>
+            )}
+            <ProductForm
+              key={editing?.id ?? "new"}
+              product={editing}
+              onDone={() => {
+                setModal(false);
+                if (onboarding.active && onboarding.step === "product")
+                  goToStep("price");
+              }}
+            />
           </>
         )}
       </Modal>
@@ -379,8 +422,8 @@ export function App() {
         onOpenChange={setResetOpen}
       >
         <p>
-          Seus produtos, custos e pedidos atuais serão substituídos pelo
-          conjunto de demonstração.
+          Seus produtos, impostos, custos e pedidos atuais serão substituídos
+          pelo conjunto de demonstração.
         </p>
         <Button
           variant="destructive"
